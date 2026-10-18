@@ -191,7 +191,7 @@ Plain CSS only.
   - 1-line footer: `Ch 7 · 47% · 12:41` with a `━━━━──` bar.
   - Use `textContainerUpgrade` for page turns (smoother on hardware than a rebuild).
 - **Reader decisions (M2):**
-  - **Layout.** Body 576×252 (9 lines; LVGL line height is fixed at 27 px), footer at y=256. Pages are measured with pretext against the inner width **minus an 8 px margin**: the simulator wrapped 566 px lines that pretext said fit 568 px, which overflowed the page (scrollbar). With the margin, 80 consecutive simulator pages showed no overflow.
+  - **Layout.** Body 576×252 (9 lines; LVGL line height is fixed at 27 px), footer at y=256. Pages are measured with pretext against the inner width **minus an 8 px margin**: the simulator wrapped 566 px lines that pretext said fit 568 px, which overflowed the page (scrollbar). With the margin, 80 consecutive simulator pages showed no overflow. Confirmed on real G2 hardware: no overflow.
   - **Pages fill completely.** Paragraphs split across pages at word boundaries (by characters only for a word wider than the page). Paragraphs start on a new line with a fullwidth-space (`U+3000`) indent instead of a blank line, which would cost one of 9 lines.
   - **Text cleanup.** Soft hyphens and zero-width characters are removed (the font draws soft hyphens); typographic and no-break spaces become spaces; `ﬁ`/`ﬂ`-style ligatures are expanded (missing from the font). Curly quotes, dashes and ellipses are in the font.
   - **Skipped items.** Spine items with no text (covers) and the book's own table of contents (EPUB 3 `nav`, EPUB 2 guide `toc`) are skipped when reading but keep their spine index, so `DocFragment[N]` still lines up.
