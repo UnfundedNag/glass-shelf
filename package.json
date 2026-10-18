@@ -18,7 +18,8 @@
     "manifest": "node scripts/gen-manifest.mjs",
     "pack": "npm run build && npm run manifest && evenhub pack build/app.json dist -o glass-shelf.ehpk --sdk-ver $(node -p \"require('./node_modules/@evenrealities/even_hub_sdk/package.json').version\")",
     "qr": "evenhub qr --http --port 5173",
-    "simulate": "node node_modules/@evenrealities/evenhub-simulator/bin/index.js http://localhost:5173"
+    "simulate": "node node_modules/@evenrealities/evenhub-simulator/bin/index.js http://localhost:5173",
+    "test:live": "LIVE=1 vitest run tests/live.test.ts"
   },
   "dependencies": {
     "@evenrealities/even_hub_sdk": "^0.0.16",

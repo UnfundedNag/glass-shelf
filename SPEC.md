@@ -81,6 +81,8 @@ books.<tailnet>.ts.net {
 - `x-auth-key: <md5(password) hex>`
 - `Content-Type: application/json` on PUT
 
+**Auth: send HTTP Basic too (resolved in M1).** CWA's kosync also accepts `Authorization: Basic` with the plain username and password. When Calibre-Web authenticates against an external provider (LDAP/OAuth/an identity proxy such as Authentik), it has no local password hash to compare the md5 `x-auth-key` against, so the md5 method returns **401** and only Basic works. Readest falls back to Basic for the same reason. The client should send Basic on every `/kosync` call (plus the `x-auth-*` headers for stock kosync servers), and the settings test should hit `/kosync/users/auth` with it. Verified against a CWA instance behind an identity proxy: Basic gives `200 {"authorized":"OK"}` on `/users/auth` and works for progress reads; md5 gives 401.
+
 **Endpoints** (relative to the base, e.g. `/kosync`):
 
 | Call | Purpose | Body / response |
@@ -198,7 +200,7 @@ Plain CSS only.
 
 ### Phone UI (settings)
 
-- Server origin, username and password. The password is stored only as its md5 key plus the Basic credential, in bridge storage. Never log either.
+- Server origin, username and password. The password is stored only as its md5 key plus the Basic credential, in bridge storage. Never log either. (The Basic credential is reversible, so it is effectively the password; it is required because kosync on externally-authenticated servers only accepts Basic, see §4.2.)
 - A "Test connection" button that hits OPDS root and `/users/auth`.
 - Library search, plus a "Send to glasses" button.
 - Sync status: last push and last pull, with device name.
