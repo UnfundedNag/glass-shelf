@@ -1,51 +1,28 @@
-import {
-  CreateStartUpPageContainer,
-  TextContainerProperty,
-  TextContainerUpgrade,
-  waitForEvenAppBridge,
-} from '@evenrealities/even_hub_sdk'
-import { gestureOf } from './glasses/input'
-
-const status = document.getElementById('status')!
+import { waitForEvenAppBridge } from '@evenrealities/even_hub_sdk'
+import { GlassesApp } from './glasses/app'
+import { startPhoneUi } from './phone/ui'
+import { BookCache } from './store/books'
+import { loadSettings, makeSettings, saveSettings, type KeyValue } from './store/settings'
 
 const bridge = await waitForEvenAppBridge()
 
-const body = { containerID: 1, containerName: 'body' }
-const hint = 'Tap to count · double-tap to exit.'
+const kv: KeyValue = {
+  get: key => bridge.getLocalStorage(key),
+  set: (key, value) => bridge.setLocalStorage(key, value),
+}
 
-const result = await bridge.createStartUpPageContainer(
-  new CreateStartUpPageContainer({
-    containerTotalNum: 1,
-    textObject: [
-      new TextContainerProperty({
-        ...body,
-        xPosition: 0,
-        yPosition: 0,
-        width: 576,
-        height: 288,
-        borderWidth: 0,
-        paddingLength: 4,
-        content: `Hello from Glass Shelf!\n${hint}`,
-        isEventCapture: 1,
-      }),
-    ],
-  }),
-)
-status.textContent = result === 0 ? 'Running. Check the glasses.' : `Glasses page failed (${result}).`
+// Dev only: seed settings from VITE_DEV_SERVER_URL / _USER / _PASSWORD in
+// .env.local, for the simulator where the phone page is awkward to type into.
+// Stripped from production builds.
+if (import.meta.env.DEV && import.meta.env.VITE_DEV_SERVER_URL && !(await loadSettings(kv))) {
+  const env = import.meta.env
+  await saveSettings(kv, makeSettings(env.VITE_DEV_SERVER_URL, env.VITE_DEV_SERVER_USER ?? '', env.VITE_DEV_SERVER_PASSWORD ?? ''))
+}
 
-let taps = 0
-const unsubscribe = bridge.onEvenHubEvent(event => {
-  switch (gestureOf(event)) {
-    case 'double-tap':
-      // Root page: hand off to the host's exit dialogue (Even Hub review requirement).
-      void bridge.shutDownPageContainer(1)
-      break
-    case 'tap':
-      taps += 1
-      void bridge.textContainerUpgrade(new TextContainerUpgrade({ ...body, content: `Taps: ${taps}\n${hint}` }))
-      break
-    case 'exit':
-      unsubscribe()
-      break
-  }
+const glasses = new GlassesApp(bridge, kv, new BookCache())
+glasses.start()
+
+await startPhoneUi(kv, {
+  onSettingsSaved: () => void glasses.showLibrary(),
+  onSendToGlasses: book => void glasses.openBook(book),
 })

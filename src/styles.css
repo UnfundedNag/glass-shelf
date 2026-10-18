@@ -1,7 +1,6 @@
 html,
 body {
   margin: 0;
-  height: 100%;
   background: #232323;
   color: #e5e5e5;
   font: 15px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
@@ -11,12 +10,107 @@ body {
   overscroll-behavior: none;
 }
 
-#app {
-  padding: 24px 16px;
-  box-sizing: border-box;
+main {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
 }
 
 h1 {
-  margin: 0 0 8px;
+  margin: 0 0 16px;
   font-size: 22px;
+}
+
+h2 {
+  margin: 24px 0 8px;
+  font-size: 16px;
+  color: #a3a3a3;
+  font-weight: 600;
+}
+
+form {
+  display: grid;
+  gap: 12px;
+}
+
+#search {
+  grid-template-columns: 1fr auto;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: #a3a3a3;
+}
+
+input {
+  font: inherit;
+  color: inherit;
+  background: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  min-width: 0;
+}
+
+button {
+  font: inherit;
+  font-weight: 600;
+  color: #111;
+  background: #6ee36e;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 16px;
+}
+
+button:disabled {
+  opacity: 0.5;
+}
+
+.status {
+  min-height: 1.45em;
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #a3a3a3;
+}
+
+.status.error {
+  color: #ff8a80;
+}
+
+#results {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+#results li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #333;
+}
+
+#results .meta {
+  flex: 1;
+  min-width: 0;
+}
+
+#results .author {
+  font-size: 13px;
+  color: #a3a3a3;
+}
+
+#results button {
+  padding: 6px 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+code {
+  font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #e5e5e5;
+  word-break: break-all;
 }

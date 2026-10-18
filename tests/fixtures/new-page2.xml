@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>urn:uuid:feed</id>
+  <title>Test Library</title>
+  <entry>
+    <title>The Left Hand of Darkness</title>
+    <id>urn:uuid:44444444-4444-4444-4444-444444444444</id>
+    <updated>2026-07-01T10:00:00+00:00</updated>
+    <author><name>Ursula K. Le Guin</name></author>
+    <link rel="http://opds-spec.org/acquisition" href="/opds/download/4/epub/" title="EPUB" type="application/epub+zip"/>
+  </entry>
+</feed>

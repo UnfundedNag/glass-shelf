@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:dcterms="http://purl.org/dc/terms/">
+  <id>urn:uuid:feed</id>
+  <updated>2026-10-18T12:00:00+00:00</updated>
+  <link rel="self" href="/opds/new" type="application/atom+xml;profile=opds-catalog;type=feed;kind=navigation"/>
+  <link rel="start" href="/opds" type="application/atom+xml;profile=opds-catalog;type=feed;kind=navigation"/>
+  <link rel="next" title="Next" href="/opds/new?offset=3" type="application/atom+xml;profile=opds-catalog;type=feed;kind=navigation"/>
+  <link rel="search" href="/opds/osd" type="application/opensearchdescription+xml"/>
+  <link type="application/atom+xml" rel="search" title="Search" href="/opds/search/{searchTerms}" />
+  <title>Test Library</title>
+  <entry>
+    <title>A Wizard of Earthsea</title>
+    <id>urn:uuid:11111111-1111-1111-1111-111111111111</id>
+    <updated>2026-10-01T10:00:00+00:00</updated>
+    <author><name>Ursula K. Le Guin</name></author>
+    <content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><p>Blurb.</p></div></content>
+    <link type="image/jpeg" href="/opds/cover/1" rel="http://opds-spec.org/image"/>
+    <link rel="http://opds-spec.org/acquisition" href="/opds/download/1/kepub/" length="1" title="KEPUB" type="application/epub+zip"/>
+    <link rel="http://opds-spec.org/acquisition" href="/opds/download/1/epub/" length="2" title="EPUB" type="application/epub+zip"/>
+    <link rel="http://opds-spec.org/acquisition" href="/opds/download/1/pdf/" length="3" title="PDF" type="application/pdf"/>
+  </entry>
+  <entry>
+    <title>Good Omens</title>
+    <id>urn:uuid:22222222-2222-2222-2222-222222222222</id>
+    <updated>2026-09-01T10:00:00+00:00</updated>
+    <author><name>Terry Pratchett</name></author>
+    <author><name>Neil Gaiman</name></author>
+    <link rel="http://opds-spec.org/acquisition" href="/opds/download/2/epub/" length="2" title="EPUB" type="application/epub+zip"/>
+  </entry>
+  <entry>
+    <title>Only a kepub and a PDF</title>
+    <id>urn:uuid:33333333-3333-3333-3333-333333333333</id>
+    <updated>2026-08-01T10:00:00+00:00</updated>
+    <author><name>Nobody</name></author>
+    <link rel="http://opds-spec.org/acquisition" href="/opds/download/3/kepub/" title="KEPUB" type="application/epub+zip"/>
+    <link rel="http://opds-spec.org/acquisition" href="/opds/download/3/pdf/" title="PDF" type="application/pdf"/>
+  </entry>
+</feed>

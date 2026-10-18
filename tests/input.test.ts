@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { OsEventTypeList, type EvenHubEvent } from '@evenrealities/even_hub_sdk'
-import { gestureOf } from '../src/glasses/input'
+import { gestureOf, listIndexOf } from '../src/glasses/input'
 
 const ev = (e: Record<string, { eventType?: OsEventTypeList }>) => e as EvenHubEvent
 
@@ -25,7 +25,17 @@ describe('gestureOf', () => {
     expect(gestureOf(ev({ sysEvent: { eventType: OsEventTypeList.ABNORMAL_EXIT_EVENT } }))).toBe('exit')
   })
 
-  it('ignores lifecycle events it does not map', () => {
-    expect(gestureOf(ev({ sysEvent: { eventType: OsEventTypeList.FOREGROUND_ENTER_EVENT } }))).toBeNull()
+  it('maps returning to the foreground and ignores other non-input events', () => {
+    expect(gestureOf(ev({ sysEvent: { eventType: OsEventTypeList.FOREGROUND_ENTER_EVENT } }))).toBe('foreground')
+    expect(gestureOf(ev({ sysEvent: { eventType: OsEventTypeList.FOREGROUND_EXIT_EVENT } }))).toBeNull()
+    expect(gestureOf(ev({ sysEvent: { eventType: OsEventTypeList.IMU_DATA_REPORT } }))).toBeNull()
+  })
+})
+
+describe('listIndexOf', () => {
+  it('reads the selected row and defaults the omitted row 0', () => {
+    expect(listIndexOf({ listEvent: { currentSelectItemIndex: 4 } } as EvenHubEvent)).toBe(4)
+    expect(listIndexOf({ listEvent: {} } as EvenHubEvent)).toBe(0)
+    expect(listIndexOf({ sysEvent: {} } as EvenHubEvent)).toBeNull()
   })
 })

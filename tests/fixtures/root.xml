@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>urn:uuid:root</id>
+  <link type="application/atom+xml" rel="search" title="Search" href="/opds/search/{searchTerms}" />
+  <title>Test Library</title>
+  <entry>
+    <title>Recently Added Books</title>
+    <link href="/opds/new" type="application/atom+xml;profile=opds-catalog"/>
+    <id>/opds/new</id>
+  </entry>
+</feed>

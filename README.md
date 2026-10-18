@@ -2,7 +2,7 @@
 
 Read your self-hosted Calibre-Web library on Even Realities G2 glasses, with reading position synced to KOReader-compatible apps such as Readest.
 
-**Status:** early development (milestone M0: scaffold). See [SPEC.md](SPEC.md) for the design and roadmap.
+**Status:** early development (milestone M1: library browsing). See [SPEC.md](SPEC.md) for the design and roadmap.
 
 ## Requirements
 
@@ -18,6 +18,8 @@ npm run dev        # Vite dev server on :5173
 npm run simulate   # Even Hub simulator pointed at the dev server
 npm test
 ```
+
+To skip typing settings in the simulator, put `VITE_DEV_SERVER_URL`, `VITE_DEV_SERVER_USER` and `VITE_DEV_SERVER_PASSWORD` in `.env.local` (see `.env.example`). They only apply to `npm run dev`.
 
 To try it on real glasses, run `npx evenhub qr --url http://<your-computer-ip>:5173` and scan the code with the Even App.
 

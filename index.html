@@ -7,9 +7,36 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <main id="app">
+    <main>
       <h1>Glass Shelf</h1>
-      <p id="status">Connecting to glasses…</p>
+
+      <section>
+        <h2>Server</h2>
+        <form id="settings" autocomplete="off">
+          <label>Calibre-Web URL
+            <input name="url" type="url" inputmode="url" placeholder="https://books.example.com" required />
+          </label>
+          <label>Username
+            <input name="username" autocapitalize="off" autocorrect="off" spellcheck="false" required />
+          </label>
+          <label>Password
+            <input name="password" type="password" />
+          </label>
+          <button type="submit">Save and test</button>
+        </form>
+        <p id="settings-status" class="status" role="status"></p>
+        <p class="status">This app's origin is <code id="app-origin"></code>. Your server's CORS headers must allow it.</p>
+      </section>
+
+      <section id="search-section" hidden>
+        <h2>Search</h2>
+        <form id="search">
+          <input name="q" type="search" placeholder="Title or author" required />
+          <button type="submit">Search</button>
+        </form>
+        <p id="search-status" class="status" role="status"></p>
+        <ul id="results"></ul>
+      </section>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
