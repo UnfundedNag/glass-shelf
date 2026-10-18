@@ -1,4 +1,5 @@
 import type { EvenAppBridge, EvenHubEvent } from '@evenrealities/even_hub_sdk'
+import { devlog } from '../devlog'
 import { EpubError, loadEpub } from '../epub/book'
 import { KosyncClient, type AuthMode } from '../kosync/client'
 import { koPartialMd5 } from '../kosync/hash'
@@ -17,6 +18,10 @@ import { FOOTER_WIDTH, READER_BOX, Renderer, type Page } from './render'
 // How long opening a book waits for the sync server before reading locally.
 const PULL_TIMEOUT_MS = 4000
 const AUTH_MODE = 'kosync:auth'
+// The firmware can send one transition twice, ~50-100 ms apart.
+const DUPLICATE_WINDOW_MS = 1000
+// Longest a screen change may hold off input; longer means a call was lost.
+const BUSY_LIMIT_MS = 15_000
 
 type ReaderScreen = {
   name: 'reader'
@@ -47,8 +52,10 @@ export class GlassesApp {
   private screen: Screen | null = null
   private recent: BookEntry[] = []
   // Drops input while a screen change is in flight, which also absorbs the
-  // duplicate events the firmware can send for one gesture.
-  private busy = false
+  // duplicate events the firmware can send for one gesture. Holds the time
+  // the change started, or 0.
+  private busySince = 0
+  private lastForeground = 0
 
   constructor(
     private readonly bridge: EvenAppBridge,
@@ -196,16 +203,24 @@ export class GlassesApp {
   private async onEvent(event: EvenHubEvent): Promise<void> {
     const gesture = gestureOf(event)
     const screen = this.screen
+    devlog('[event]', gesture, screen?.name, event.jsonData ?? '')
     if (!gesture || !screen) return
 
-    // The host clears the page when it shows the exit dialogue and when the
-    // app returns from the background; redraw what we had.
-    if (gesture === 'foreground') return void this.renderer.show(screen.page)
+    if (gesture === 'foreground') {
+      const now = Date.now()
+      if (now - this.lastForeground < DUPLICATE_WINDOW_MS) return
+      this.lastForeground = now
+      // Whatever was in flight when the app was suspended is not coming back.
+      this.busySince = 0
+      // The host clears the page when it shows the exit dialogue and when the
+      // app returns from the background; redraw what we had.
+      return void this.renderer.show(screen.page)
+    }
     // Backgrounded or closing: this may be the last chance to sync (SPEC §5).
     if (gesture === 'background' || gesture === 'exit') return void this.leaveReader()
-    if (this.busy) return
+    if (this.busySince && Date.now() - this.busySince < BUSY_LIMIT_MS) return
 
-    this.busy = true
+    this.busySince = Date.now()
     try {
       if (screen.name === 'prompt') {
         if (gesture === 'tap') {
@@ -224,7 +239,7 @@ export class GlassesApp {
           await this.renderLibrary()
         } else {
           // Root screens hand off to the host's exit dialogue (Even Hub review requirement).
-          await this.bridge.shutDownPageContainer(1)
+          await this.renderer.shutDown()
         }
       } else if (screen.name === 'reader') {
         if (gesture === 'swipe-down') await this.turn(screen, true)
@@ -239,8 +254,10 @@ export class GlassesApp {
           screen.onTap?.()
         }
       }
+    } catch (err) {
+      devlog('[event failed]', gesture, String(err))
     } finally {
-      this.busy = false
+      this.busySince = 0
     }
   }
 }

@@ -7,6 +7,7 @@ import {
   TextContainerUpgrade,
   type EvenAppBridge,
 } from '@evenrealities/even_hub_sdk'
+import { devlog } from '../devlog'
 
 export const WIDTH = 576
 export const HEIGHT = 288
@@ -28,12 +29,33 @@ export type Page =
   | { kind: 'list'; title: string; items: string[] }
   | { kind: 'reader'; body: string; footer: string }
 
+// A bridge call that has not answered by then is abandoned, so one lost
+// reply (e.g. while the phone app is suspended) cannot block every later one.
+const CALL_TIMEOUT_MS = 5000
+
 export class Renderer {
   // Startup is one-shot per session: a retry is rejected after blocking ~2 s.
   // Latch that it was called, not that it succeeded (page-lifecycle.md).
   private started = false
+  // Page commands run one at a time, in order: overlapping rebuilds (from
+  // duplicate host events) are a likely way to confuse the host.
+  private queue: Promise<unknown> = Promise.resolve()
 
   constructor(private readonly bridge: EvenAppBridge) {}
+
+  private run<T>(label: string, call: () => Promise<T>): Promise<T | null> {
+    const task = this.queue.then(async () => {
+      const started = performance.now()
+      const result = await Promise.race([
+        call(),
+        new Promise<null>(resolve => setTimeout(() => resolve(null), CALL_TIMEOUT_MS)),
+      ])
+      devlog('[bridge]', label, '->', result, `${Math.round(performance.now() - started)}ms`)
+      return result
+    })
+    this.queue = task.catch(() => null)
+    return task
+  }
 
   async show(page: Page): Promise<boolean> {
     const containers =
@@ -44,21 +66,33 @@ export class Renderer {
           : readerPage(page.body, page.footer)
     if (!this.started) {
       this.started = true
-      const result = await this.bridge.createStartUpPageContainer(new CreateStartUpPageContainer(containers))
+      const result = await this.run(`startup ${page.kind}`, () =>
+        this.bridge.createStartUpPageContainer(new CreateStartUpPageContainer(containers)),
+      )
       if (result === 0) return true
     }
-    return this.bridge.rebuildPageContainer(new RebuildPageContainer(containers))
+    return (await this.run(`rebuild ${page.kind}`, () =>
+      this.bridge.rebuildPageContainer(new RebuildPageContainer(containers)),
+    )) === true
   }
 
   // Updates the reader in place: flicker-free, unlike a rebuild. Callers must
   // have shown a reader page first.
   async updateReader(body: string | null, footer: string | null): Promise<void> {
     if (body !== null) {
-      await this.bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: 1, containerName: 'body', content: body }))
+      await this.run('upgrade body', () =>
+        this.bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: 1, containerName: 'body', content: body })),
+      )
     }
     if (footer !== null) {
-      await this.bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: 2, containerName: 'footer', content: footer }))
+      await this.run('upgrade footer', () =>
+        this.bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: 2, containerName: 'footer', content: footer })),
+      )
     }
+  }
+
+  shutDown(): Promise<unknown> {
+    return this.run('shutdown', () => this.bridge.shutDownPageContainer(1))
   }
 }
 
