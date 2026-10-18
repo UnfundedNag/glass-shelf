@@ -1,6 +1,8 @@
+import { KosyncClient } from '../kosync/client'
 import { OpdsClient } from '../opds/client'
 import type { BookEntry } from '../opds/parse'
 import { loadSettings, makeSettings, saveSettings, type KeyValue, type Settings } from '../store/settings'
+import type { SyncEvent } from '../sync/session'
 
 export type PhoneUiHooks = {
   onSettingsSaved(): void
@@ -14,6 +16,20 @@ function el<T extends HTMLElement>(id: string): T {
 function setStatus(node: HTMLElement, text: string, error = false): void {
   node.textContent = text
   node.classList.toggle('error', error)
+}
+
+// Shows sync activity from the glasses ("Synced 47% · 12:41").
+export function showSyncEvent(event: SyncEvent): void {
+  const node = el('sync-status')
+  const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  if (event.kind === 'pushed') setStatus(node, `Sync: sent ${Math.floor(event.percentage * 100)}% at ${time}.`)
+  else if (event.kind === 'pulled') {
+    const r = event.remote
+    setStatus(
+      node,
+      r ? `Sync: server has ${Math.floor((r.percentage ?? 0) * 100)}% from ${r.device ?? 'another device'} (checked ${time}).` : `Sync: no saved position yet (checked ${time}).`,
+    )
+  } else setStatus(node, `Sync: ${event.message}`, true)
 }
 
 export async function startPhoneUi(kv: KeyValue, hooks: PhoneUiHooks): Promise<void> {
@@ -58,6 +74,14 @@ export async function startPhoneUi(kv: KeyValue, hooks: PhoneUiHooks): Promise<v
       fields.password.placeholder = 'Saved. Leave blank to keep it.'
       searchSection.hidden = false
       setStatus(status, `Connected to “${root.title || 'Calibre-Web'}”. Saved.`)
+      // Reading still works without sync, so a sync failure only warns.
+      const syncStatus = el('sync-status')
+      try {
+        await new KosyncClient(next).authorize()
+        setStatus(syncStatus, 'Sync: KOReader sync login works.')
+      } catch (err) {
+        setStatus(syncStatus, `Sync: ${(err as Error).message} Reading works; progress will not sync.`, true)
+      }
       hooks.onSettingsSaved()
     } catch (err) {
       setStatus(status, `${(err as Error).message} Not saved.`, true)

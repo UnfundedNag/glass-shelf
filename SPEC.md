@@ -112,6 +112,9 @@ books.<tailnet>.ts.net {
 - `progress` is a CREngine **xpointer** string, e.g. `/body/DocFragment[12]/body/div/p[3]/text().45`.
   - `DocFragment[N]` is the 1-based **spine index**.
   - Readest converts its EPUB CFI to and from this format.
+  - **Readest will not approximate (M3 finding).** If `progress` starts with `/body`, Readest treats it as the only acceptable answer: when the path does not resolve it shows "Sync failed" and does *not* fall back to `percentage`. A wrong XPointer is worse than none. Readest resolves a bare element path (`/body/DocFragment[7]/body/div/p[3]`, no text step) to the element start, counting same-name element siblings 1-based with the index omitted for the first, which is the rule `src/epub/blocks.ts` uses. So M3 pushes the element path of the block at the top of the page (paragraph-level); M4 adds the `/text().N` offset.
+- **Client behaviour (M3).** Requests go to `<server URL>/kosync/`. Basic auth first; on 401 the client retries once with the `x-auth-*` md5 headers (stock kosync servers) and remembers which worked. The phone settings test checks `/kosync/users/auth` but only warns on failure, since reading works without sync.
+- **CWA quirk.** CWA returned GET timestamps exactly 4 h in the future (PUT replies were correct): it appears to store server-local time and read it back as UTC. The sync prompt omits the age when a timestamp is in the future rather than show a wrong one.
 
 ## 5. Position model (the hard part)
 
@@ -137,6 +140,14 @@ The glasses re-flow text into ~400–500 character pages, so pages mean nothing 
 - **On open:** pull. If the remote position is ahead of the local one and from a different `device_id`, show on the glasses: `Jump to 47% (Readest · 2h ago)? Tap = yes, double-tap = no`.
 - **Push timing:** push on page-turn, debounced to about 10 s idle, and on app background/exit lifecycle events. Never push during the initial pull/prompt.
 - **Offline:** keep the last unsent push in storage and retry on the next network success.
+- **As built (M3):**
+  - Opening a book waits up to 4 s for the pull, then reads locally.
+  - "Ahead" compares resolved positions, not raw percentages (Readest's percentage is page-based, ours character-based). A remote position on the page already showing is not a jump, so a device that just opened where the glasses left off does not trigger a prompt.
+  - Accepting marks the position as synced (no immediate push back). Declining keeps the local position; the next page turn pushes it, overwriting the remote one.
+  - Pushes go out 10 s after the last page turn, immediately on leaving the book (double-tap), and on `FOREGROUND_EXIT`/exit events. Unchanged positions are not re-sent. Failed pushes are kept per document and retried when the library next loads.
+  - Device name `Glass Shelf (G2)`; `device_id` is a random 32-hex id kept in bridge storage.
+  - Local positions are keyed by the document hash (`pos:<hash>`).
+  - **Same account.** Positions belong to the sync account, so the glasses and Readest must log in as the same user.
 
 ## 6. App structure
 
@@ -301,6 +312,7 @@ Plain CSS only.
 3. **VPN reachability.** Does the Even app's WebView on GrapheneOS route through the phone's VPN? It should; verify in M1 with a fetch to the server origin. Moot if the server is reachable publicly.
    - *Resolved in M1:* yes. On a WireGuard phone the Even WebView loaded the dev server by LAN IP and fetched the library from the Calibre-Web server.
 4. **Readest matching.** Does Readest use KOReader's binary partial-MD5 for the kosync `document` field? Confirm in the Readest source or by reading what it PUTs. If it hashes differently, the glasses must match Readest's scheme instead.
+   - *M3:* the algorithm matches. Readest's `partialMD5` (`apps/readest-app/src/utils/md5.ts`) samples the same offsets, including `1024 << -2` wrapping to 0. CWA also matched a hash pushed by the glasses to its own record for that book (`calibre_checksum_version: koreader`), an independent check of the implementation. What remains is configuration: Readest set to Binary matching, downloading the same EPUB file.
 5. **Lifecycle events.** Which lifecycle events fire reliably when the glasses app is closed? This is the final progress push; see `docs/page-lifecycle.md`.
 
 ## References

@@ -8,6 +8,8 @@ import { describe, expect, it } from 'vitest'
 import { measureTextWrap } from '@evenrealities/pretext'
 import { loadEpub } from '../src/epub/book'
 import { READER_BOX } from '../src/glasses/render'
+import { KosyncClient } from '../src/kosync/client'
+import { koPartialMd5 } from '../src/kosync/hash'
 import { OpdsClient } from '../src/opds/client'
 import { Reader } from '../src/reader/reader'
 import { makeSettings } from '../src/store/settings'
@@ -65,6 +67,18 @@ describe.skipIf(!live)('live Calibre-Web', () => {
       console.log(`${entry.title}: ${book.chapters.length} spine items, ${pages} pages, ${seconds}s`)
     }
   }, 600_000)
+
+  it('logs in to KOReader sync and reads a position by document hash', async () => {
+    const settings = makeSettings(env.VITE_DEV_SERVER_URL, env.VITE_DEV_SERVER_USER ?? '', env.VITE_DEV_SERVER_PASSWORD ?? '')
+    const sync = new KosyncClient(settings)
+    await sync.authorize()
+    const [book] = await client().recentBooks(1)
+    const hash = koPartialMd5(await client().download(book))
+    expect(hash).toMatch(/^[0-9a-f]{32}$/)
+    // Null or a record: either way the server accepted the hash and login.
+    const progress = await sync.getProgress(hash)
+    if (progress) expect(typeof progress.percentage).toBe('number')
+  })
 
   it('rejects a wrong password as an auth error', async () => {
     const bad = new OpdsClient(makeSettings(env.VITE_DEV_SERVER_URL, env.VITE_DEV_SERVER_USER ?? '', 'definitely-wrong'))

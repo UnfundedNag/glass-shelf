@@ -1,6 +1,6 @@
 import { OsEventTypeList, type EvenHubEvent } from '@evenrealities/even_hub_sdk'
 
-export type Gesture = 'tap' | 'double-tap' | 'swipe-up' | 'swipe-down' | 'foreground' | 'exit'
+export type Gesture = 'tap' | 'double-tap' | 'swipe-up' | 'swipe-down' | 'foreground' | 'background' | 'exit'
 
 // CLICK_EVENT is 0 and protobuf drops zero-value fields, so a tap arrives as an
 // envelope with no eventType. Default it inside the envelope check: an absent
@@ -19,6 +19,7 @@ export function gestureOf(event: EvenHubEvent): Gesture | null {
 
   if (has(OsEventTypeList.SYSTEM_EXIT_EVENT) || has(OsEventTypeList.ABNORMAL_EXIT_EVENT)) return 'exit'
   if (has(OsEventTypeList.FOREGROUND_ENTER_EVENT)) return 'foreground'
+  if (has(OsEventTypeList.FOREGROUND_EXIT_EVENT)) return 'background'
   if (has(OsEventTypeList.DOUBLE_CLICK_EVENT)) return 'double-tap'
   if (has(OsEventTypeList.SCROLL_BOTTOM_EVENT)) return 'swipe-down'
   if (has(OsEventTypeList.SCROLL_TOP_EVENT)) return 'swipe-up'

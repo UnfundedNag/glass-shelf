@@ -25,9 +25,9 @@ describe('gestureOf', () => {
     expect(gestureOf(ev({ sysEvent: { eventType: OsEventTypeList.ABNORMAL_EXIT_EVENT } }))).toBe('exit')
   })
 
-  it('maps returning to the foreground and ignores other non-input events', () => {
+  it('maps foreground changes and ignores other non-input events', () => {
     expect(gestureOf(ev({ sysEvent: { eventType: OsEventTypeList.FOREGROUND_ENTER_EVENT } }))).toBe('foreground')
-    expect(gestureOf(ev({ sysEvent: { eventType: OsEventTypeList.FOREGROUND_EXIT_EVENT } }))).toBeNull()
+    expect(gestureOf(ev({ sysEvent: { eventType: OsEventTypeList.FOREGROUND_EXIT_EVENT } }))).toBe('background')
     expect(gestureOf(ev({ sysEvent: { eventType: OsEventTypeList.IMU_DATA_REPORT } }))).toBeNull()
   })
 })
