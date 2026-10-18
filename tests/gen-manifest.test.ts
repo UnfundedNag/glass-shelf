@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 // @ts-expect-error plain JS build script
-import { buildManifest, normalizeOrigin } from '../scripts/gen-manifest.mjs'
+import { buildManifest, checkPackageId, normalizeOrigin } from '../scripts/gen-manifest.mjs'
 import base from '../app.json'
 
 describe('normalizeOrigin', () => {
@@ -22,5 +22,19 @@ describe('buildManifest', () => {
     const m = buildManifest(base, 'https://books.example.org')
     expect(m.permissions.find((p: { name: string }) => p.name === 'network').whitelist).toEqual(['https://books.example.org'])
     expect({ ...m, permissions: undefined }).toEqual({ ...base, permissions: undefined })
+  })
+})
+
+describe('package id', () => {
+  it('overrides package_id when given', () => {
+    expect(buildManifest(base, 'https://books.example.org', 'org.example.shelf').package_id).toBe('org.example.shelf')
+    expect(buildManifest(base, 'https://books.example.org').package_id).toBe(base.package_id)
+  })
+
+  it('follows Even Hub naming rules', () => {
+    expect(checkPackageId('com.me2.glassshelf')).toBe('com.me2.glassshelf')
+    for (const bad of ['glassshelf', 'com.my-name.shelf', 'Com.me.shelf', 'com.2fast.shelf', 'com..shelf']) {
+      expect(() => checkPackageId(bad)).toThrow()
+    }
   })
 })

@@ -157,13 +157,25 @@ cp .env.example .env.local    # then set SERVER_ORIGIN=https://books.example.com
 3. Show a QR code for it, using your computer's address on the network your phone can reach: `npx evenhub qr --url http://<your-computer-ip>:5173`
 4. Scan it from the Even Hub developer section. The app opens on your glasses and its settings page on your phone.
 
-### Package it
+### Install it as an app (private build)
 
-```bash
-npm run pack    # writes glass-shelf.ehpk
-```
+To keep Glass Shelf on your glasses without a computer running, package it and install it as a private build, visible only to your Even account.
 
-This builds the app and writes `build/app.json` with your `SERVER_ORIGIN` as the only allowed network origin. The `.ehpk` that CI builds uses a placeholder origin and only proves the build works. Installing a packaged build privately is not documented here yet.
+1. In `.env.local`, also set `PACKAGE_ID` to an id of your own, such as `com.yourname.glassshelf`. Package ids are unique across Even Hub, so the default one is taken. Use lowercase letters and digits, separated by dots, with no hyphens.
+2. Package it:
+
+   ```bash
+   npm run pack    # writes glass-shelf.ehpk
+   ```
+
+   This builds the app and writes `build/app.json` with your package id, and with your `SERVER_ORIGIN` as the only allowed network origin.
+3. Sign in at [hub.evenrealities.com](https://hub.evenrealities.com/login), create a project, and upload `glass-shelf.ehpk` as a build. Leave it **private**.
+4. In the Even app, in the **Even Hub** tab (Developer Mode), go to **Me → Apps → Private builds** and tap **Install**. Glass Shelf then appears in the glasses menu.
+5. Open Glass Shelf. If its settings page on your phone is empty, enter your server details again.
+
+Your server address is part of the uploaded build, as its network permission; your username and password are not. To update, pack and upload a new build, then install it again. Even's guide: [Private Testing](https://hub.evenrealities.com/docs/test/private-testing).
+
+The `.ehpk` that CI builds uses a placeholder origin and only proves the build works.
 
 ## Using Glass Shelf
 
