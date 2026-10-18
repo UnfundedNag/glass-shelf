@@ -19,15 +19,15 @@ const memoryKv = (): KeyValue & { map: Map<string, string> } => {
 }
 
 describe('proposeJump', () => {
-  it('offers a paragraph-precise jump to a position further on from another device', async () => {
+  it('offers an exact jump to a position further on from another device', async () => {
     const r = await reader()
     const jump = proposeJump(r, { progress: '/body/DocFragment[2]/body/div/p[4]/text().12', percentage: 0.4, device_id: 'other' }, 'me')
-    expect(jump).toMatchObject({ precision: 'paragraph', target: { spineIndex: 1 } })
+    expect(jump).toMatchObject({ precision: 'exact', target: { spineIndex: 1 } })
     // Proposing does not move the reader.
     expect(r.position()).toMatchObject({ spineIndex: 0, block: 0, offset: 0 })
-    // The target is the start of the page that holds paragraph 4.
+    // The target is the start of the page that holds paragraph 4, offset 12.
     r.seek(jump!.target)
-    expect(r.view().text).toContain('3 Lorem')
+    expect(r.view().text).toContain('3 Lorem ipsum do')
   })
 
   it('ignores its own pushes, positions behind, and the page it is already on', async () => {
@@ -77,7 +77,10 @@ describe('SyncSession', () => {
     await vi.advanceTimersByTimeAsync(PUSH_DELAY_MS)
     expect(client.putProgress).toHaveBeenCalledTimes(1)
     const update = vi.mocked(client.putProgress).mock.calls[0][0]
-    expect(update.progress).toMatch(/^\/body\/DocFragment\[\d+\]\/body(\/[a-z0-9[\]]+)*$/)
+    expect(update.progress).toMatch(/^\/body\/DocFragment\[\d+\]\/body(\/[a-z0-9[\]]+)*\/text\(\)(\[\d+\])?\.\d+$/)
+    // It names the first character on the page.
+    const pos = r.position()
+    expect(update.progress).toBe(r.xpointer(pos))
     expect(update).toMatchObject({ document: 'doc1', device: 'Glass Shelf (G2)', device_id: 'me' })
     expect(update.percentage).toBeCloseTo(r.position().percentage, 3)
   })

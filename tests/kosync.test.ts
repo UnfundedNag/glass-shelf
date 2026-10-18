@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { KosyncClient } from '../src/kosync/client'
 import { koPartialMd5 } from '../src/kosync/hash'
-import { blockForPath, buildXPointer, parseXPointer } from '../src/kosync/xpointer'
+import { blockForPath, parseXPointer } from '../src/kosync/xpointer'
 import { makeSettings } from '../src/store/settings'
 
 // Straight transcription of KOReader's util.partialMD5 loop, with Node's MD5,
@@ -32,28 +32,26 @@ describe('koPartialMd5', () => {
   })
 })
 
-describe('xpointers', () => {
-  it('builds DocFragment paths from spine index and block path', () => {
-    expect(buildXPointer(6, '/body/div/p[3]')).toBe('/body/DocFragment[7]/body/div/p[3]')
-  })
-
+describe('parseXPointer', () => {
   it.each([
-    ['/body/DocFragment[12]/body/div/p[3]/text().45', 11, '/body/div/p[3]'],
-    ['/body/DocFragment[12]/body/div/p[3]/text()[2].5', 11, '/body/div/p[3]'],
-    ['/body/DocFragment[3]/body/div[2].0', 2, '/body/div[2]'],
-    ['/body/DocFragment[3]/body/section/p', 2, '/body/section/p'],
-    ['/body/DocFragment/body/p[9]/text().0', 0, '/body/p[9]'],
-    ['/body/DocFragment[5]', 4, '/body'],
-  ])('parses %s', (xp, spineIndex, elementPath) => {
-    expect(parseXPointer(xp)).toEqual({ spineIndex, elementPath })
+    ['/body/DocFragment[12]/body/div/p[3]/text().45', 11, '/body/div/p[3]', { index: 1, offset: 45 }],
+    ['/body/DocFragment[12]/body/div/p[3]/text()[2].5', 11, '/body/div/p[3]', { index: 2, offset: 5 }],
+    ['/body/DocFragment[3]/body/div[2].0', 2, '/body/div[2]', undefined],
+    ['/body/DocFragment[3]/body/section/p', 2, '/body/section/p', undefined],
+    ['/body/DocFragment/body/p[9]/text().0', 0, '/body/p[9]', { index: 1, offset: 0 }],
+    ['/body/DocFragment[5]', 4, '/body', undefined],
+  ])('parses %s', (xp, spineIndex, elementPath, text) => {
+    expect(parseXPointer(xp)).toEqual(text ? { spineIndex, elementPath, text } : { spineIndex, elementPath })
   })
 
   it('rejects positions that are not XPointers', () => {
     expect(parseXPointer('42')).toBeNull()
     expect(parseXPointer('epubcfi(/6/4!/4/2)')).toBeNull()
   })
+})
 
-  const blocks = ['/body/h1', '/body/div', '/body/div/p[1]', '/body/div/p[2]', '/body/section/p'].map(path => ({ path, text: 'x' }))
+describe('blockForPath', () => {
+  const blocks = ['/body/h1', '/body/div', '/body/div/p[1]', '/body/div/p[2]', '/body/section/p'].map(path => ({ path, text: 'x', sources: [] }))
 
   it('resolves element paths to blocks', () => {
     expect(blockForPath(blocks, '/body/div/p[2]')).toBe(3)

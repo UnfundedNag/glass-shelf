@@ -9,6 +9,7 @@ import { measureTextWrap } from '@evenrealities/pretext'
 import { loadEpub } from '../src/epub/book'
 import { READER_BOX } from '../src/glasses/render'
 import { KosyncClient } from '../src/kosync/client'
+import { locate, parseXPointer, xpointerAt } from '../src/kosync/xpointer'
 import { koPartialMd5 } from '../src/kosync/hash'
 import { OpdsClient } from '../src/opds/client'
 import { Reader } from '../src/reader/reader'
@@ -65,6 +66,34 @@ describe.skipIf(!live)('live Calibre-Web', () => {
       }
       const seconds = ((performance.now() - started) / 1000).toFixed(1)
       console.log(`${entry.title}: ${book.chapters.length} spine items, ${pages} pages, ${seconds}s`)
+    }
+  }, 600_000)
+
+  it('maps sampled positions in every recent book to XPointers and back', async () => {
+    for (const entry of await client().recentBooks(20)) {
+      const book = await loadEpub(await client().download(entry))
+      let checked = 0
+      for (const chapter of book.chapters) {
+        const { blocks, spineIndex } = chapter
+        // Every 5th block, a handful of offsets across it.
+        for (let b = 0; b < blocks.length; b += 5) {
+          const text = blocks[b].text
+          for (const offset of [0, 1, Math.floor(text.length / 3), Math.floor(text.length / 2), text.length - 1]) {
+            if (offset < 0 || offset >= text.length || text[offset] === '\n') continue
+            const xp = xpointerAt(spineIndex, blocks, { block: b, offset })
+            const parsed = parseXPointer(xp)!
+            expect(parsed.spineIndex, xp).toBe(spineIndex)
+            const found = locate(blocks, parsed)
+            // Characters expanded from one source character (ligatures) share
+            // an XPointer, so allow landing a character or two earlier.
+            expect(found?.block, xp).toBe(b)
+            expect(offset - found!.offset, xp).toBeGreaterThanOrEqual(0)
+            expect(offset - found!.offset, xp).toBeLessThanOrEqual(2)
+            checked++
+          }
+        }
+      }
+      console.log(`${entry.title}: ${checked} positions round-tripped`)
     }
   }, 600_000)
 

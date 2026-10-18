@@ -112,7 +112,7 @@ books.<tailnet>.ts.net {
 - `progress` is a CREngine **xpointer** string, e.g. `/body/DocFragment[12]/body/div/p[3]/text().45`.
   - `DocFragment[N]` is the 1-based **spine index**.
   - Readest converts its EPUB CFI to and from this format.
-  - **Readest will not approximate (M3 finding).** If `progress` starts with `/body`, Readest treats it as the only acceptable answer: when the path does not resolve it shows "Sync failed" and does *not* fall back to `percentage`. A wrong XPointer is worse than none. Readest resolves a bare element path (`/body/DocFragment[7]/body/div/p[3]`, no text step) to the element start, counting same-name element siblings 1-based with the index omitted for the first, which is the rule `src/epub/blocks.ts` uses. So M3 pushes the element path of the block at the top of the page (paragraph-level); M4 adds the `/text().N` offset.
+  - **Readest will not approximate (M3 finding; M4 adds text offsets).** If `progress` starts with `/body`, Readest treats it as the only acceptable answer: when the path does not resolve it shows "Sync failed" and does *not* fall back to `percentage`. A wrong XPointer is worse than none. Readest resolves a bare element path (`/body/DocFragment[7]/body/div/p[3]`, no text step) to the element start, counting same-name element siblings 1-based with the index omitted for the first, which is the rule `src/epub/blocks.ts` uses. So M3 pushes the element path of the block at the top of the page (paragraph-level); M4 adds the `/text().N` offset.
 - **Client behaviour (M3).** Requests go to `<server URL>/kosync/`. Basic auth first; on 401 the client retries once with the `x-auth-*` md5 headers (stock kosync servers) and remembers which worked. The phone settings test checks `/kosync/users/auth` but only warns on failure, since reading works without sync.
 - **CWA quirk: timestamps follow the container's time zone.** CWA stores UTC correctly as a naive datetime but reads it back with a naive `.timestamp()`, which applies the container's local zone, so a container on America/New_York returned GET timestamps 4 h in the future (5 h in winter). Fixed server-side by running the container with `TZ=UTC`; other self-hosters may hit it. So nothing depends on server timestamps: "ahead" is decided by comparing positions and `device_id` only, and the sync prompt shows the age purely as information, omitting it when the timestamp is in the future.
 
@@ -132,6 +132,17 @@ The glasses re-flow text into ~400–500 character pages, so pages mean nothing 
 2. Try to resolve the element path in that chapter's DOM. On success, start at that element (and the text offset if present).
 3. Otherwise, use the global `percentage` and clamp to chapter N's character range.
 4. Otherwise, use the global percentage alone.
+
+**As built (M4).** Positions are exact to the character in both directions:
+
+- **Text model.** Each block keeps its raw text nodes (`TextRun`: parent element path, CREngine text-node index and count, `pre` flag, raw data). The display text and a character map back to (node, CREngine offset) come from one pipeline (`blockText`), so they cannot drift apart; the map is built only for the one block being synced.
+- **CREngine counting rules** (as documented by Readest's converter, which was pinned against the real engine; implemented independently here because Readest is AGPL):
+  - the path names the text node's *direct parent*, so text inside `<em>` is `/p/em/text().N`;
+  - `text()[K]` counts the parent's text nodes 1-based, skipping empty ones and a whitespace-only node that opens a block; `[K]` is omitted when there is one;
+  - `N` counts the node's characters with each HTML whitespace run (`[ \t\n\r\f]`) as one, including a leading run; inside `pre`/`code`/etc. raw characters count;
+  - characters the glasses drop (soft hyphens) or expand (ligatures) still count as in the source.
+- **Push** writes the XPointer of the first character on the page. **Pull** resolves `text()[K].N` to the exact character, then shows the page containing it (glasses pages cannot start mid-line). Element-only and `tag[i].N` forms land on the start of the element's block.
+- Checked with unit tests on tricky fragments and a live test that round-trips sampled positions in every recent book (22k positions, all landing on the same character).
 
 > Expect paragraph-level accuracy most of the time and chapter-level accuracy at worst. Another small-screen reader that added kosync shipped chapter-level sync, because exact sync would need character-level tracking. **Ship the ladder; don't chase perfection in v1.**
 

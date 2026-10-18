@@ -5,13 +5,14 @@ import { EpubError, loadEpub } from '../src/epub/book'
 import { normalizeText } from '../src/epub/text'
 import { makeEpub } from './helpers/epub'
 
+const blocks = (html: string) => blocksOf(body(html)).map(({ path, text }) => ({ path, text }))
 const body = (html: string) =>
   new DOMParser().parseFromString(`<html xmlns="http://www.w3.org/1999/xhtml"><body>${html}</body></html>`, 'application/xhtml+xml')
     .getElementsByTagNameNS('*', 'body')[0]
 
 describe('blocksOf', () => {
   it('addresses blocks with CREngine-style paths', () => {
-    expect(blocksOf(body('<div><p>One</p><p>Two</p></div><p>Three</p>'))).toEqual([
+    expect(blocks('<div><p>One</p><p>Two</p></div><p>Three</p>')).toEqual([
       { path: '/body/div/p[1]', text: 'One' },
       { path: '/body/div/p[2]', text: 'Two' },
       { path: '/body/p', text: 'Three' },
@@ -19,26 +20,26 @@ describe('blocksOf', () => {
   })
 
   it('counts siblings by element name, including empty ones', () => {
-    expect(blocksOf(body('<div></div><div><h2>T</h2><p></p><p>x</p></div>')).map(b => b.path)).toEqual([
+    expect(blocks('<div></div><div><h2>T</h2><p></p><p>x</p></div>').map(b => b.path)).toEqual([
       '/body/div[2]/h2',
       '/body/div[2]/p[2]',
     ])
   })
 
   it('collapses whitespace, keeps <br> line breaks and keeps inline markup text', () => {
-    expect(blocksOf(body('<p>  Hello\n   <em>dear</em>   world<br/>second  line </p>'))[0].text).toBe(
+    expect(blocks('<p>  Hello\n   <em>dear</em>   world<br/>second  line </p>')[0].text).toBe(
       'Hello dear world\nsecond line',
     )
   })
 
   it('skips scripts, styles and images', () => {
-    expect(blocksOf(body('<p>a<script>x()</script><img src="i.png"/>b</p><style>p{}</style>'))).toEqual([
+    expect(blocks('<p>a<script>x()</script><img src="i.png"/>b</p><style>p{}</style>')).toEqual([
       { path: '/body/p', text: 'ab' },
     ])
   })
 
   it('emits text mixed between block children as blocks of the parent', () => {
-    expect(blocksOf(body('<div>Intro <b>bold</b><p>Para</p>Outro</div>'))).toEqual([
+    expect(blocks('<div>Intro <b>bold</b><p>Para</p>Outro</div>')).toEqual([
       { path: '/body/div', text: 'Intro bold' },
       { path: '/body/div/p', text: 'Para' },
       { path: '/body/div', text: 'Outro' },

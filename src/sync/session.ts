@@ -1,5 +1,5 @@
 import { KosyncError, type KosyncClient, type ProgressUpdate, type RemoteProgress } from '../kosync/client'
-import { blockForPath, buildXPointer, parseXPointer } from '../kosync/xpointer'
+import { locate, parseXPointer } from '../kosync/xpointer'
 import type { Position, Reader } from '../reader/reader'
 import type { KeyValue } from '../store/settings'
 
@@ -17,8 +17,9 @@ export type SyncEvent =
 export type Jump = {
   remote: RemoteProgress
   target: Position
-  // How precisely the remote position resolved (SPEC §5 ladder).
-  precision: 'paragraph' | 'chapter' | 'percentage'
+  // How precisely the remote position resolved (SPEC §5 ladder): the exact
+  // character, the start of its paragraph, its chapter, or the percentage.
+  precision: 'exact' | 'paragraph' | 'chapter' | 'percentage'
 }
 
 // A stable random id for this install; KOReader uses it to tell devices apart.
@@ -37,10 +38,10 @@ export function applyRemote(reader: Reader, remote: RemoteProgress): Jump['preci
   const percentage = Number.isFinite(remote.percentage) ? remote.percentage! : null
   if (parsed) {
     const blocks = reader.blocksOf(parsed.spineIndex)
-    const block = blocks ? blockForPath(blocks, parsed.elementPath) : null
-    if (block !== null) {
-      reader.seek({ spineIndex: parsed.spineIndex, block, offset: 0 })
-      return 'paragraph'
+    const found = blocks ? locate(blocks, parsed) : null
+    if (found) {
+      reader.seek({ spineIndex: parsed.spineIndex, block: found.block, offset: found.offset })
+      return found.exact ? 'exact' : 'paragraph'
     }
     if (blocks && percentage !== null) {
       reader.seekPercentage(percentage, parsed.spineIndex)
@@ -116,7 +117,7 @@ export class SyncSession {
     const position = this.reader.position()
     return {
       document: this.document,
-      progress: buildXPointer(position.spineIndex, this.reader.blockPath(position)),
+      progress: this.reader.xpointer(position),
       percentage: Math.round(position.percentage * 10000) / 10000,
       device: DEVICE_NAME,
       device_id: this.device,

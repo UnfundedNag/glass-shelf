@@ -1,4 +1,5 @@
 import type { Book } from '../epub/book'
+import { xpointerAt } from '../kosync/xpointer'
 import { pageAt, paginate, type Box, type Page } from '../paginate/paginate'
 
 // Where the reader is, in the SPEC §5 position model.
@@ -95,10 +96,10 @@ export class Reader {
     return this.book.chapters.find(c => c.spineIndex === spineIndex)?.blocks ?? null
   }
 
-  // Path of the block a position is in, for building the sync XPointer.
-  blockPath(position: Position): string {
+  // The KOReader XPointer of a position, down to the character.
+  xpointer(position: Position): string {
     const chapter = this.book.chapters.find(c => c.spineIndex === position.spineIndex)
-    return chapter?.blocks[position.block]?.path ?? '/body'
+    return xpointerAt(position.spineIndex, chapter?.blocks ?? [], position)
   }
 
   next(): boolean {

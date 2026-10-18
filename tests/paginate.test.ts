@@ -5,7 +5,7 @@ import { INDENT, LINE_HEIGHT, pageAt, paginate } from '../src/paginate/paginate'
 import { READER_BOX } from '../src/glasses/render'
 import { LOREM } from './helpers/epub'
 
-const blocks = (...texts: string[]): Block[] => texts.map((text, i) => ({ path: `/body/p[${i + 1}]`, text }))
+const blocks = (...texts: string[]): Block[] => texts.map((text, i) => ({ path: `/body/p[${i + 1}]`, text, sources: [] }))
 // Rebuilds the source text from pages, to check nothing is lost or repeated.
 const flatten = (texts: string[]) => texts.join(' ').replaceAll(INDENT, '').replace(/\s+/g, ' ').trim()
 
