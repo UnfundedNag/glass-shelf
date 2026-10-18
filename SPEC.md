@@ -148,6 +148,7 @@ The glasses re-flow text into ~400–500 character pages, so pages mean nothing 
   - Device name `Glass Shelf (G2)`; `device_id` is a random 32-hex id kept in bridge storage.
   - Local positions are keyed by the document hash (`pos:<hash>`).
   - **Same account.** Positions belong to the sync account, so the glasses and Readest must log in as the same user.
+  - **Verified with Readest (Android):** glasses to Readest opened on the pushed paragraph; Readest to glasses showed the prompt with the device name and landed exactly on Readest's position.
 
 ## 6. App structure
 

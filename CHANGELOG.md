@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- M3 (in progress): KOReader sync. KOReader partial-MD5 document hash, sync client (HTTP Basic with md5-key fallback), pull on open with a "Jump to 47% (Readest)?" prompt, paragraph-level XPointer pushes 10 s after page turns and on leaving or backgrounding, an offline retry queue, and a sync check and status line on the phone page.
+- M3: KOReader sync, verified both ways with Readest on Android (glasses to Readest opened on the pushed paragraph; Readest to glasses prompted and landed exactly). KOReader partial-MD5 document hash, sync client (HTTP Basic with md5-key fallback), pull on open with a "Jump to 47% (Readest)?" prompt, paragraph-level XPointer pushes 10 s after page turns and on leaving or backgrounding, an offline retry queue, and a sync check and status line on the phone page.
 
 - M2: EPUB reader on the glasses (verified on real G2: pages fit with no overflow, fast open, resume works). EPUB parsing (spine, XHTML to text blocks with CREngine-style element paths, DRM detection), pixel-accurate page filling with Even's pretext measurement, swipe to turn pages across chapters, tap to toggle the footer (progress bar, chapter, percentage, clock), double-tap back to the library, and local resume. Skips covers and the book's own table of contents.
 
