@@ -1,16 +1,22 @@
 import type { EvenAppBridge, EvenHubEvent } from '@evenrealities/even_hub_sdk'
+import { EpubError, loadEpub } from '../epub/book'
 import { OpdsClient, OpdsError } from '../opds/client'
 import type { BookEntry } from '../opds/parse'
+import { Reader } from '../reader/reader'
 import type { BookCache } from '../store/books'
+import { loadPosition, savePosition } from '../store/positions'
 import { loadLastBook, loadSettings, saveLastBook, type KeyValue } from '../store/settings'
+import { footerText } from './footer'
 import { gestureOf, listIndexOf } from './input'
 import { libraryItems, MAX_ITEMS, type LibraryItem } from './library'
-import { Renderer, type Page } from './render'
+import { FOOTER_WIDTH, READER_BOX, Renderer, type Page } from './render'
 
 type Screen =
   | { name: 'message'; page: Page; onTap?: () => void }
   | { name: 'library'; page: Page; items: LibraryItem[] }
+  // Opening a book, or a book that failed to open: double-tap goes back.
   | { name: 'book'; page: Page }
+  | { name: 'reader'; page: Page & { kind: 'reader' }; book: BookEntry; reader: Reader; footer: boolean }
 
 export class GlassesApp {
   private readonly renderer: Renderer
@@ -57,18 +63,19 @@ export class GlassesApp {
   async openBook(book: BookEntry): Promise<void> {
     const settings = await loadSettings(this.kv)
     if (!settings) return
-    await this.show({ name: 'book', page: { kind: 'message', text: `${book.title}\n\nDownloading…` } })
+    await this.show({ name: 'book', page: { kind: 'message', text: `${book.title}\n\nOpening…` } })
     try {
       let bytes = await this.cache.get(book.id)
-      const cached = bytes !== null
       if (!bytes) {
+        await this.renderer.show({ kind: 'message', text: `${book.title}\n\nDownloading…` })
         bytes = await new OpdsClient(settings).download(book)
         await this.cache.put(book.id, bytes)
       }
+      const reader = new Reader(await loadEpub(bytes), READER_BOX)
+      const saved = await loadPosition(this.kv, book.id)
+      if (saved) reader.seek(saved)
       await saveLastBook(this.kv, book)
-      const size = `${Math.round(bytes.byteLength / 1024)} KB${cached ? ', from cache' : ''}`
-      const text = `${book.title}\n${book.author}\n\nEPUB ready (${size}).\nThe reader arrives in the next milestone.\n\nDouble-tap: back to library`
-      await this.show({ name: 'book', page: { kind: 'message', text } })
+      await this.show({ name: 'reader', page: this.readerPage(reader, true), book, reader, footer: true })
     } catch (err) {
       await this.show({
         name: 'book',
@@ -84,6 +91,27 @@ export class GlassesApp {
       page: { kind: 'list', title: 'Glass Shelf', items: items.map(i => i.label) },
       items,
     })
+  }
+
+  private readerPage(reader: Reader, footer: boolean): Page & { kind: 'reader' } {
+    const view = reader.view()
+    return { kind: 'reader', body: view.text, footer: footer ? footerText(view, new Date(), FOOTER_WIDTH) : ' ' }
+  }
+
+  // Page turns update the containers in place rather than rebuilding.
+  private async turn(screen: Screen & { name: 'reader' }, forward: boolean): Promise<void> {
+    const moved = forward ? screen.reader.next() : screen.reader.prev()
+    const page = this.readerPage(screen.reader, screen.footer)
+    // At either end nothing moves; still refresh the footer (clock, "End of book").
+    await this.renderer.updateReader(moved ? page.body : null, page.footer)
+    screen.page = page
+    if (moved) void savePosition(this.kv, screen.book.id, screen.reader.position())
+  }
+
+  private async toggleFooter(screen: Screen & { name: 'reader' }): Promise<void> {
+    screen.footer = !screen.footer
+    screen.page = this.readerPage(screen.reader, screen.footer)
+    await this.renderer.updateReader(null, screen.page.footer)
   }
 
   private message(text: string, onTap?: () => void): Promise<void> {
@@ -108,9 +136,19 @@ export class GlassesApp {
     this.busy = true
     try {
       if (gesture === 'double-tap') {
-        if (screen.name === 'book') await this.renderLibrary()
-        // Root screens hand off to the host's exit dialogue (Even Hub review requirement).
-        else await this.bridge.shutDownPageContainer(1)
+        if (screen.name === 'reader') {
+          await savePosition(this.kv, screen.book.id, screen.reader.position())
+          await this.renderLibrary()
+        } else if (screen.name === 'book') {
+          await this.renderLibrary()
+        } else {
+          // Root screens hand off to the host's exit dialogue (Even Hub review requirement).
+          await this.bridge.shutDownPageContainer(1)
+        }
+      } else if (screen.name === 'reader') {
+        if (gesture === 'swipe-down') await this.turn(screen, true)
+        else if (gesture === 'swipe-up') await this.turn(screen, false)
+        else if (gesture === 'tap') await this.toggleFooter(screen)
       } else if (gesture === 'tap') {
         if (screen.name === 'library') {
           const index = listIndexOf(event)
@@ -127,6 +165,6 @@ export class GlassesApp {
 }
 
 function describe(err: unknown): string {
-  if (err instanceof OpdsError) return err.message
+  if (err instanceof OpdsError || err instanceof EpubError) return err.message
   return `Something went wrong: ${err instanceof Error ? err.message : String(err)}`
 }

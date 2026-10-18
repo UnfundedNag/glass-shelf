@@ -150,7 +150,8 @@ glass-shelf/
     opds/               # feed fetch + Atom parse
     kosync/             # client + partialMD5
     epub/               # JSZip unpack, spine, XHTML → text blocks w/ DOM paths
-    paginate/           # pixel-accurate fit using even-toolkit text measurement
+    paginate/           # pixel-accurate fit using @evenrealities/pretext measurement
+    reader/             # page cursor across chapters, positions
     store/              # bridge storage (settings, positions) + IndexedDB (EPUB bytes)
   tests/                # vitest: hash vectors, xpointer build/parse, paginator
   vite.config.ts
@@ -162,7 +163,7 @@ glass-shelf/
 
 - `@evenrealities/even_hub_sdk`
 - `@evenrealities/evenhub-cli` (dev)
-- `even-toolkit` (gestures, keep-alive, pixel-accurate G2 text measurement)
+- `@evenrealities/pretext` (Even's pixel-accurate G2 text measurement; replaced `even-toolkit` in M2, which the app no longer needs)
 - `jszip`
 - `spark-md5`
 - `vite`, `typescript`, `vitest`
@@ -189,6 +190,13 @@ Plain CSS only.
   - body text container with event capture;
   - 1-line footer: `Ch 7 · 47% · 12:41` with a `━━━━──` bar.
   - Use `textContainerUpgrade` for page turns (smoother on hardware than a rebuild).
+- **Reader decisions (M2):**
+  - **Layout.** Body 576×252 (9 lines; LVGL line height is fixed at 27 px), footer at y=256. Pages are measured with pretext against the inner width **minus an 8 px margin**: the simulator wrapped 566 px lines that pretext said fit 568 px, which overflowed the page (scrollbar). With the margin, 80 consecutive simulator pages showed no overflow.
+  - **Pages fill completely.** Paragraphs split across pages at word boundaries (by characters only for a word wider than the page). Paragraphs start on a new line with a fullwidth-space (`U+3000`) indent instead of a blank line, which would cost one of 9 lines.
+  - **Text cleanup.** Soft hyphens and zero-width characters are removed (the font draws soft hyphens); typographic and no-break spaces become spaces; `ﬁ`/`ﬂ`-style ligatures are expanded (missing from the font). Curly quotes, dashes and ellipses are in the font.
+  - **Skipped items.** Spine items with no text (covers) and the book's own table of contents (EPUB 3 `nav`, EPUB 2 guide `toc`) are skipped when reading but keep their spine index, so `DocFragment[N]` still lines up.
+  - **Local position.** Saved on every page turn and on leaving the reader, as (spine index, block index, character offset, percentage). Block offsets are into the *normalized* text; M4 must map them to CREngine text-node offsets.
+  - **Speed.** Books are fully parsed on open (needed for whole-book percentage) and paginated a chapter at a time. In the simulator, War and Peace (1.6 MB, 396 chapters) reopens from cache in ~0.8 s.
 
 **Inputs.** Verify these against even-g2-notes `docs/input-events.md` before wiring:
 
@@ -255,7 +263,7 @@ Plain CSS only.
    - Read to the middle of chapter 5 in Readest and push.
    - Open on the G2 and confirm it lands in chapter 5 near the same paragraph.
    - Page forward 10 pages on the G2, exit, and open in Readest. It should land within a screen.
-3. **Paginator.** Snapshot tests that no page exceeds container height, using even-toolkit measurement. Include edge cases: long words, CJK, empty chapters.
+3. **Paginator.** Snapshot tests that no page exceeds container height, using pretext measurement. Include edge cases: long words, CJK, empty chapters. (`npm run test:live` also paginates every recent book on the configured server and checks every page.)
 4. **xpointer.** Run build → parse → resolve against sample chapters, including nested `div`s and `text()` offsets.
 5. **Simulator first, then hardware.**
    - `npm run dev` plus the Even Hub simulator (or the even-dev launcher with `APP_PATH=../glass-shelf`).

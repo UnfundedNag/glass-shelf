@@ -4,14 +4,29 @@ import {
   ListItemContainerProperty,
   RebuildPageContainer,
   TextContainerProperty,
+  TextContainerUpgrade,
   type EvenAppBridge,
 } from '@evenrealities/even_hub_sdk'
 
 export const WIDTH = 576
 export const HEIGHT = 288
 const HEADER_HEIGHT = 36
+const PADDING = 4
 
-export type Page = { kind: 'message'; text: string } | { kind: 'list'; title: string; items: string[] }
+// Reader layout: 9 lines of body (9 × 27 px + padding) over a 1-line footer.
+const BODY_HEIGHT = 252
+const FOOTER_Y = 256
+// Text wraps a few pixels narrower than the inner box: the simulator kept
+// lines up to 563 px but wrapped 566 px ones that pretext measured as fitting.
+// Measuring against a slightly narrower box keeps pages from overflowing.
+const WRAP_MARGIN = 8
+export const READER_BOX = { width: WIDTH - 2 * PADDING - WRAP_MARGIN, height: BODY_HEIGHT - 2 * PADDING }
+export const FOOTER_WIDTH = WIDTH - 2 * PADDING
+
+export type Page =
+  | { kind: 'message'; text: string }
+  | { kind: 'list'; title: string; items: string[] }
+  | { kind: 'reader'; body: string; footer: string }
 
 export class Renderer {
   // Startup is one-shot per session: a retry is rejected after blocking ~2 s.
@@ -21,13 +36,61 @@ export class Renderer {
   constructor(private readonly bridge: EvenAppBridge) {}
 
   async show(page: Page): Promise<boolean> {
-    const containers = page.kind === 'message' ? messagePage(page.text) : listPage(page.title, page.items)
+    const containers =
+      page.kind === 'message'
+        ? messagePage(page.text)
+        : page.kind === 'list'
+          ? listPage(page.title, page.items)
+          : readerPage(page.body, page.footer)
     if (!this.started) {
       this.started = true
       const result = await this.bridge.createStartUpPageContainer(new CreateStartUpPageContainer(containers))
       if (result === 0) return true
     }
     return this.bridge.rebuildPageContainer(new RebuildPageContainer(containers))
+  }
+
+  // Updates the reader in place: flicker-free, unlike a rebuild. Callers must
+  // have shown a reader page first.
+  async updateReader(body: string | null, footer: string | null): Promise<void> {
+    if (body !== null) {
+      await this.bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: 1, containerName: 'body', content: body }))
+    }
+    if (footer !== null) {
+      await this.bridge.textContainerUpgrade(new TextContainerUpgrade({ containerID: 2, containerName: 'footer', content: footer }))
+    }
+  }
+}
+
+function readerPage(body: string, footer: string) {
+  return {
+    containerTotalNum: 2,
+    textObject: [
+      new TextContainerProperty({
+        xPosition: 0,
+        yPosition: 0,
+        width: WIDTH,
+        height: BODY_HEIGHT,
+        borderWidth: 0,
+        paddingLength: PADDING,
+        containerID: 1,
+        containerName: 'body',
+        content: body,
+        isEventCapture: 1,
+      }),
+      new TextContainerProperty({
+        xPosition: 0,
+        yPosition: FOOTER_Y,
+        width: WIDTH,
+        height: HEIGHT - FOOTER_Y,
+        borderWidth: 0,
+        paddingLength: 2,
+        containerID: 2,
+        containerName: 'footer',
+        content: footer,
+        isEventCapture: 0,
+      }),
+    ],
   }
 }
 
