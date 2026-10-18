@@ -17,11 +17,9 @@ const PADDING = 4
 // Reader layout: 9 lines of body (9 × 27 px + padding) over a 1-line footer.
 const BODY_HEIGHT = 252
 const FOOTER_Y = 256
-// Text wraps a few pixels narrower than the inner box: the simulator kept
-// lines up to 563 px but wrapped 566 px ones that pretext measured as fitting.
-// Measuring against a slightly narrower box keeps pages from overflowing.
-const WRAP_MARGIN = 8
-export const READER_BOX = { width: WIDTH - 2 * PADDING - WRAP_MARGIN, height: BODY_HEIGHT - 2 * PADDING }
+// Pages are measured against the body's inner width with the firmware's wrap
+// rule (src/paginate/wrap.ts); no safety margin is needed.
+export const READER_BOX = { width: WIDTH - 2 * PADDING, height: BODY_HEIGHT - 2 * PADDING }
 export const FOOTER_WIDTH = WIDTH - 2 * PADDING
 
 export type Page =

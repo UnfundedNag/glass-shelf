@@ -5,13 +5,13 @@ import { JSDOM } from 'jsdom'
 // VITE_DEV_SERVER_URL / _USER / _PASSWORD in .env.local. Node skips CORS, so
 // this tests the server and parser, not the WebView's CORS path.
 import { describe, expect, it } from 'vitest'
-import { measureTextWrap } from '@evenrealities/pretext'
 import { loadEpub } from '../src/epub/book'
 import { READER_BOX } from '../src/glasses/render'
 import { KosyncClient } from '../src/kosync/client'
 import { locate, parseXPointer, xpointerAt } from '../src/kosync/xpointer'
 import { koPartialMd5 } from '../src/kosync/hash'
 import { OpdsClient } from '../src/opds/client'
+import { g2LineCount } from '../src/paginate/wrap'
 import { Reader } from '../src/reader/reader'
 import { makeSettings } from '../src/store/settings'
 
@@ -59,10 +59,10 @@ describe.skipIf(!live)('live Calibre-Web', () => {
       const book = await loadEpub(await client().download(entry))
       const reader = new Reader(book, READER_BOX)
       let pages = 1
-      expect(measureTextWrap(reader.view().text, READER_BOX.width).lineCount).toBeLessThanOrEqual(9)
+      expect(g2LineCount(reader.view().text, READER_BOX.width)).toBeLessThanOrEqual(9)
       while (reader.next()) {
         pages++
-        expect(measureTextWrap(reader.view().text, READER_BOX.width).lineCount).toBeLessThanOrEqual(9)
+        expect(g2LineCount(reader.view().text, READER_BOX.width)).toBeLessThanOrEqual(9)
       }
       const seconds = ((performance.now() - started) / 1000).toFixed(1)
       console.log(`${entry.title}: ${book.chapters.length} spine items, ${pages} pages, ${seconds}s`)

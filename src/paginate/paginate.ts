@@ -1,4 +1,4 @@
-import { measureTextWrap } from '@evenrealities/pretext'
+import { g2Measure } from './wrap'
 import type { Block } from '../epub/blocks'
 
 // LVGL's line height on the G2 is fixed.
@@ -45,9 +45,9 @@ function lastFitting(candidates: number[], fits: (n: number) => boolean): number
 }
 
 // Splits a chapter into pages that each fill the box without overflowing,
-// measured with the firmware's glyph widths. Paragraphs split across pages
+// measured with the firmware's glyph widths and wrap rule. Paragraphs split across pages
 // at word boundaries (or mid-word if a single word cannot fit).
-export function paginate(blocks: Block[], box: Box, measure: Measure = measureTextWrap): Page[] {
+export function paginate(blocks: Block[], box: Box, measure: Measure = g2Measure): Page[] {
   const maxLines = Math.max(1, Math.floor(box.height / LINE_HEIGHT))
   const fits = (text: string) => text.length <= MAX_PAGE_CHARS && measure(text, box.width).lineCount <= maxLines
 

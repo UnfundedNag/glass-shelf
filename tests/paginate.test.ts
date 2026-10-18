@@ -1,4 +1,5 @@
 import { measureTextWrap } from '@evenrealities/pretext'
+import { g2LineCount, g2LineCountExact } from '../src/paginate/wrap'
 import { describe, expect, it } from 'vitest'
 import type { Block } from '../src/epub/blocks'
 import { INDENT, LINE_HEIGHT, pageAt, paginate } from '../src/paginate/paginate'
@@ -16,12 +17,12 @@ describe('paginate (real G2 measurements)', () => {
 
   it('never overflows the body container', () => {
     expect(maxLines).toBe(9)
-    for (const page of pages) expect(measureTextWrap(page.text, READER_BOX.width).lineCount).toBeLessThanOrEqual(maxLines)
+    for (const page of pages) expect(g2LineCount(page.text, READER_BOX.width)).toBeLessThanOrEqual(maxLines)
   })
 
   it('fills pages: every page but the last uses the full height', () => {
     for (const page of pages.slice(0, -1)) {
-      expect(measureTextWrap(page.text, READER_BOX.width).lineCount).toBeGreaterThanOrEqual(maxLines - 1)
+      expect(g2LineCount(page.text, READER_BOX.width)).toBeGreaterThanOrEqual(maxLines - 1)
     }
   })
 
@@ -36,6 +37,27 @@ describe('paginate (real G2 measurements)', () => {
       const rest = source[block].text.slice(offset)
       expect(page.text.replace(INDENT, '').startsWith(rest.slice(0, 10))).toBe(true)
     }
+  })
+})
+
+describe('g2LineCount', () => {
+  const width = (s: string) => measureTextWrap(s, 1e6).lineWidths[0]
+
+  it('keeps a word that ends the paragraph using the full width', () => {
+    expect(g2LineCount('aaaa bbb', width('aaaa bbb'))).toBe(1)
+  })
+
+  it('moves a word down when the space after it does not fit', () => {
+    // pretext alone would keep "bbb" on the first line.
+    expect(measureTextWrap('aaaa bbb c', width('aaaa bbb')).lineCount).toBe(2)
+    expect(g2LineCount('aaaa bbb c', width('aaaa bbb'))).toBe(2)
+    expect(g2LineCount('aaaa bbb c', width('aaaa bbb') + 3)).toBe(2)
+    expect(g2LineCount('aaaa bbb c', width('aaaa bbb c'))).toBe(1)
+  })
+
+  it('agrees with whole-line measurement', () => {
+    const text = `${INDENT}“Off with her head!” the Queen shouted at the top of her voice. Nobody moved.\n${INDENT}${LOREM}`
+    for (let w = 300; w <= 568; w += 7) expect(g2LineCount(text, w)).toBe(g2LineCountExact(text, w))
   })
 })
 
