@@ -1,0 +1,22 @@
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #232323;
+  color: #e5e5e5;
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  /* No WebView zoom, iOS text auto-sizing or rubber-band scroll. */
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior: none;
+}
+
+#app {
+  padding: 24px 16px;
+  box-sizing: border-box;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}

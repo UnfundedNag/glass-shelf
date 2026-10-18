@@ -1,0 +1,20 @@
+{
+  "package_id": "com.nickjohnson.glassshelf",
+  "edition": "202601",
+  "name": "Glass Shelf",
+  "version": "0.1.0",
+  "min_app_version": "2.2.10",
+  "min_sdk_version": "0.0.16",
+  "tagline": "Read your Calibre-Web library with synced progress",
+  "description": "Browse a Calibre-Web OPDS library and read EPUBs on the G2. Reading position syncs with KOReader-compatible apps like Readest via a KOReader sync server.",
+  "author": "Nick Johnson",
+  "entrypoint": "index.html",
+  "supported_languages": ["en"],
+  "permissions": [
+    {
+      "name": "network",
+      "desc": "Downloads books from your Calibre-Web server and syncs reading position.",
+      "whitelist": ["https://books.example.com"]
+    }
+  ]
+}

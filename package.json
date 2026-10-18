@@ -1,0 +1,33 @@
+{
+  "name": "glass-shelf",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Calibre-Web (OPDS) reader for Even Realities G2 glasses with KOReader-sync progress",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "manifest": "node scripts/gen-manifest.mjs",
+    "pack": "npm run build && npm run manifest && evenhub pack build/app.json dist -o glass-shelf.ehpk --sdk-ver $(node -p \"require('./node_modules/@evenrealities/even_hub_sdk/package.json').version\")",
+    "qr": "evenhub qr --http --port 5173",
+    "simulate": "node node_modules/@evenrealities/evenhub-simulator/bin/index.js http://localhost:5173"
+  },
+  "dependencies": {
+    "@evenrealities/even_hub_sdk": "^0.0.16"
+  },
+  "devDependencies": {
+    "@evenrealities/evenhub-cli": "^0.1.14",
+    "@evenrealities/evenhub-simulator": "^0.9.5",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  }
+}
