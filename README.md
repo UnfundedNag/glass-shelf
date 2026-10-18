@@ -2,7 +2,7 @@
 
 Read your self-hosted Calibre-Web library on Even Realities G2 glasses, with reading position synced to KOReader-compatible apps such as Readest.
 
-**Status:** early development (milestone M1: library browsing). See [SPEC.md](SPEC.md) for the design and roadmap.
+**Status:** early development (M1 done: library browsing; next is M2, the reader). See [SPEC.md](SPEC.md) for the design and roadmap.
 
 ## Requirements
 

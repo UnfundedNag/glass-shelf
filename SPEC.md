@@ -291,6 +291,7 @@ Plain CSS only.
 2. **WebView origin.** What is the WebView origin of a packaged `.ehpk` app? Needed to tighten `Access-Control-Allow-Origin` from `*`.
    - *M1:* not documented anywhere yet. The phone settings page now displays `location.origin`, so reading it off the phone answers this. In dev it is the Vite URL (e.g. `http://192.168.x.x:5173`).
 3. **VPN reachability.** Does the Even app's WebView on GrapheneOS route through the phone's VPN? It should; verify in M1 with a fetch to the server origin. Moot if the server is reachable publicly.
+   - *Resolved in M1:* yes. On a WireGuard phone the Even WebView loaded the dev server by LAN IP and fetched the library from the Calibre-Web server.
 4. **Readest matching.** Does Readest use KOReader's binary partial-MD5 for the kosync `document` field? Confirm in the Readest source or by reading what it PUTs. If it hashes differently, the glasses must match Readest's scheme instead.
 5. **Lifecycle events.** Which lifecycle events fire reliably when the glasses app is closed? This is the final progress push; see `docs/page-lifecycle.md`.
 
