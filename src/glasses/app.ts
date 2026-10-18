@@ -247,9 +247,8 @@ export class GlassesApp {
 
 function promptText(jump: Jump): string {
   const percent = Math.floor((jump.remote.percentage ?? jump.target.percentage) * 100)
-  // Display only: server timestamps are untrusted. CWA reads its UTC times
-  // back in the container's zone, landing hours in the future (SPEC §4.2);
-  // a wrong age is worse than none.
+  // Display only. CWA containers not running in UTC report times hours in
+  // the future (SPEC §4.2); a wrong age is worse than none.
   const at = jump.remote.timestamp ? jump.remote.timestamp * 1000 : null
   const from = [jump.remote.device, at && at <= Date.now() + 60_000 ? ago(at) : null]
     .filter(Boolean)
