@@ -28,6 +28,13 @@ describe.skipIf(!live)('live Calibre-Web', () => {
     }
   })
 
+  it('finds a recent book by searching for its title', async () => {
+    const [book] = await client().recentBooks(1)
+    const word = book.title.split(/\s+/).sort((a, b) => b.length - a.length)[0]
+    const found = await client().search(word)
+    expect(found.map(b => b.id)).toContain(book.id)
+  })
+
   it('downloads an EPUB (zip bytes)', async () => {
     const [book] = await client().recentBooks(1)
     const bytes = new Uint8Array(await client().download(book))

@@ -9,4 +9,11 @@
     <author><name>Ursula K. Le Guin</name></author>
     <link rel="http://opds-spec.org/acquisition" href="/opds/download/4/epub/" title="EPUB" type="application/epub+zip"/>
   </entry>
+  <entry>
+    <title>Ready Player One</title>
+    <id>urn:uuid:55555555-5555-5555-5555-555555555555</id>
+    <updated>2026-06-01T10:00:00+00:00</updated>
+    <author><name>Cline| Ernest</name></author>
+    <link rel="http://opds-spec.org/acquisition" href="/opds/download/5/epub/" title="EPUB" type="application/epub+zip"/>
+  </entry>
 </feed>

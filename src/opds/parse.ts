@@ -61,7 +61,11 @@ function parseEntry(entry: Element, base: string): BookEntry | NavEntry | null {
   if (acquisitions.length > 0) {
     const epub = acquisitions.find(isPlainEpub)
     if (!epub) return null
-    const authors = children(entry, 'author').map(a => text(a, 'name')).filter(Boolean)
+    // Calibre stores the comma in "Last, First" author names as '|', and
+    // Calibre-Web's OPDS feed passes it through.
+    const authors = children(entry, 'author')
+      .map(a => text(a, 'name').replaceAll('|', ','))
+      .filter(Boolean)
     return {
       kind: 'book',
       id,

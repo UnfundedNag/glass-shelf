@@ -29,6 +29,11 @@ describe('parseFeed', () => {
     expect(feed.entries[1]).toMatchObject({ author: 'Terry Pratchett, Neil Gaiman' })
   })
 
+  it("restores the comma Calibre stores as '|' in author names", () => {
+    const page2 = parseFeed(fixture('new-page2.xml'), `${BASE}opds/new`)
+    expect(page2.entries[1]).toMatchObject({ title: 'Ready Player One', author: 'Cline, Ernest' })
+  })
+
   it('reads pagination and the Atom search template', () => {
     expect(feed.title).toBe('Test Library')
     expect(feed.next).toBe('https://books.example.org/opds/new?offset=3')
@@ -88,7 +93,7 @@ describe('OpdsClient', () => {
       'https://books.example.org/opds': fixture('root.xml'),
       'https://books.example.org/opds/search/le%20guin%2Fdark': fixture('new-page2.xml'),
     })
-    expect((await client.search('le guin/dark')).map(b => b.title)).toEqual(['The Left Hand of Darkness'])
+    expect((await client.search('le guin/dark')).map(b => b.title)).toEqual(['The Left Hand of Darkness', 'Ready Player One'])
   })
 
   it('reports rejected credentials, server errors and network failures distinctly', async () => {
