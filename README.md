@@ -55,7 +55,7 @@ What the proxy needs to do:
   - `Access-Control-Allow-Methods: GET, PUT, OPTIONS`
   - `Access-Control-Max-Age: 86400` (optional; saves a preflight per request)
 
-`*` is safe here because the app sends credentials in the `Authorization` header, not cookies, so other websites cannot use your login. You can narrow it to the app's origin, which the Glass Shelf settings page shows on your phone.
+`*` is safe here because the app sends credentials in the `Authorization` header, not cookies, so other websites cannot use your login. Keep `*`: the installed app loads from a local address on your phone (`http://127.0.0.1:` and a port number), so there is no fixed origin to narrow it to.
 
 <details>
 <summary><b>nginx / nginx proxy manager</b> (example)</summary>
@@ -183,7 +183,7 @@ The `.ehpk` that CI builds uses a placeholder origin and only proves the build w
 
 - **Server:** your Calibre-Web address, username and password. **Save and test** checks the book feed and the sync login. Sync problems only warn: reading works without sync.
 - **Search:** search your whole library and **Send to glasses**.
-- The app's own origin, if you want to narrow CORS to it.
+- The app's own origin, for troubleshooting.
 
 **On your glasses:**
 
