@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from '../opds/fetch'
 import type { Settings } from '../store/settings'
 
 // One record per document on a KOReader sync server.
@@ -60,7 +61,7 @@ export class KosyncClient {
 
   private async send(mode: AuthMode, path: string, body?: unknown): Promise<Response> {
     try {
-      return await fetch(new URL(`kosync/${path}`, this.settings.url).href, {
+      return await fetchWithTimeout(new URL(`kosync/${path}`, this.settings.url).href, {
         method: body === undefined ? 'GET' : 'PUT',
         headers: this.headers(mode, body !== undefined),
         body: body === undefined ? undefined : JSON.stringify(body),

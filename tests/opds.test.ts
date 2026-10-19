@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { RESPONSE_TIMEOUT_MS } from '../src/opds/fetch'
 import { OpdsClient, OpdsError } from '../src/opds/client'
 import { parseFeed } from '../src/opds/parse'
 import newPage1 from './fixtures/new-page1.xml?raw'
@@ -104,6 +105,20 @@ describe('OpdsClient', () => {
     vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))))
     await expect(client.root()).rejects.toBeInstanceOf(OpdsError)
     await expect(client.root()).rejects.toMatchObject({ kind: 'network' })
+  })
+
+  it('gives up when the server never answers', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) => new Promise((_, reject) => {
+        init.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+      })))
+      const result = expect(client.root()).rejects.toMatchObject({ kind: 'network' })
+      await vi.advanceTimersByTimeAsync(RESPONSE_TIMEOUT_MS)
+      await result
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('reports an HTML login page as a format error', async () => {

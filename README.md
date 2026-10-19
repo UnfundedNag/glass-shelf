@@ -30,8 +30,8 @@ Read your self-hosted [Calibre-Web](https://github.com/janeczku/calibre-web) lib
 
 - Even Realities G2 glasses and the Even app **2.2.10 or newer** on your phone.
 - **Calibre-Web-Automated (CWA)** for reading *and* syncing. Plain Calibre-Web works for browsing and reading, but has no sync server.
-- An **HTTPS address for your server that your phone can reach**: on the internet, over a VPN such as WireGuard or Tailscale, or on your home network.
-- A **reverse proxy** in front of it that you can add headers to (nginx, nginx proxy manager, Caddy, ...). The app runs in a web view on your phone, which enforces CORS.
+- An **address for your server that your phone can reach**: HTTPS on the internet, or plain HTTP on a private network (a VPN such as WireGuard or Tailscale, or your home Wi-Fi). See [Public or private network](#public-or-private-network).
+- A **reverse proxy** in front of it that you can add headers to (nginx, nginx proxy manager, Caddy, ...). This is needed even on a private network: the app runs in a web view on your phone, which enforces CORS, and Calibre-Web never sends CORS headers itself.
 - Node.js 20+ to build the app.
 
 ## Server setup
@@ -43,6 +43,13 @@ In CWA, open **Admin → CWA Settings** and tick **Enable KOReader Sync (CWA Plu
 Glass Shelf logs in to both the book feed and the sync server with your normal Calibre-Web username and password (HTTP Basic). This also works when Calibre-Web authenticates through LDAP, OAuth or an identity proxy such as Authentik; KOReader's own md5-key login does not, because the server has no local password to compare it with.
 
 ### 2. Allow the app through CORS
+
+#### Public or private network
+
+- **Public:** your server already has an HTTPS address on the internet, usually behind nginx, nginx proxy manager or Caddy. Add the CORS rules below to that proxy.
+- **Private:** your phone reaches the server over a VPN (WireGuard, Tailscale) or your home Wi-Fi, and nothing is exposed to the internet. You can skip HTTPS and certificates and run a small plain-HTTP proxy that only adds CORS headers: see [Private network: a minimal proxy](#private-network-a-minimal-proxy). The installed app talks to plain `http://` addresses (tested on Android; iOS is untested and may refuse plain HTTP).
+
+#### What the proxy must do
 
 Your reverse proxy must add CORS headers for two paths: `/opds` (the book feed and downloads) and `/kosync` (sync). The rest of the site can stay as it is.
 
@@ -56,6 +63,8 @@ What the proxy needs to do:
   - `Access-Control-Max-Age: 86400` (optional; saves a preflight per request)
 
 `*` is safe here because the app sends credentials in the `Authorization` header, not cookies, so other websites cannot use your login. Keep `*`: the installed app loads from a local address on your phone (`http://127.0.0.1:` and a port number), so there is no fixed origin to narrow it to.
+
+**If Calibre-Web trusts a login header,** strip it on these paths. With **Allow Reverse Proxy Authentication** turned on (common with Authentik or Authelia), Calibre-Web logs in whoever a header such as `X-authentik-username` names. Your identity proxy sets that header on the paths it protects, but `/opds` and `/kosync` bypass it, so anyone who can reach them could send the header themselves and log in as any user. The examples below remove it; use the header name from your Calibre-Web settings.
 
 <details>
 <summary><b>nginx / nginx proxy manager</b> (example)</summary>
@@ -76,6 +85,7 @@ location ~ ^/(opds|kosync)(/|$) {
     add_header Access-Control-Allow-Methods "GET, PUT, OPTIONS" always;
 
     proxy_pass http://calibre-web-automated:8083;
+    proxy_set_header X-authentik-username "";    # your reverse-proxy login header, if any
     proxy_set_header Host $host;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -103,11 +113,43 @@ books.example.com {
         Access-Control-Max-Age 86400
     }
     respond @preflight 204
-    reverse_proxy calibre-web-automated:8083
+    reverse_proxy calibre-web-automated:8083 {
+        header_up -X-authentik-username    # your reverse-proxy login header, if any
+    }
 }
 ```
 
 </details>
+
+#### Private network: a minimal proxy
+
+On a VPN or home network, a plain-HTTP Caddy in front of CWA is enough. This one serves only `/opds` and `/kosync` (everything else gets `404`), so it is not a second way into the rest of Calibre-Web:
+
+```caddy
+:8084 {
+    @app path /opds /opds/* /kosync /kosync/*
+    handle @app {
+        header {
+            Access-Control-Allow-Origin "*"
+            Access-Control-Allow-Headers "Authorization, Accept, Content-Type, x-auth-user, x-auth-key"
+            Access-Control-Allow-Methods "GET, PUT, OPTIONS"
+            Access-Control-Max-Age 86400
+        }
+        @preflight method OPTIONS
+        respond @preflight 204
+        reverse_proxy calibre-web-automated:8083 {
+            header_up -X-authentik-username    # your reverse-proxy login header, if any
+        }
+    }
+    respond 404
+}
+```
+
+Then build with `SERVER_ORIGIN=http://<server-ip>:8084`, using the address your phone reaches over the VPN or Wi-Fi.
+
+- Plain HTTP sends your password unencrypted, which is only acceptable on a network you trust. Over WireGuard or Tailscale the tunnel itself is encrypted.
+- If you firewall the port, allow the address your phone's traffic actually arrives from. Some VPN gateways replace the phone's VPN address with their own.
+- Your phone's VPN must route your server's subnet (WireGuard's `AllowedIPs`). If the app reports it could not reach the server, open the address in the phone's browser: it should ask for a username and password. If the page never loads, the phone has no route to the server.
 
 Check it from any machine (replace the address):
 
@@ -213,7 +255,7 @@ The library lists **▶ Continue: \<your last book\>**, then the 19 most recentl
 
 ## Privacy
 
-- Your server address, username and credentials are stored only in the Even app's storage for Glass Shelf on your phone. The password is kept as the HTTP Basic credential and KOReader's md5 key, both derived from it; treat them like the password.
+- Your server address, username and credentials are stored only in the Even app's storage on your phone. That storage is not private to Glass Shelf: a second app installed from the same developer account read Glass Shelf's saved settings, and Even does not document whether apps from other developers can too. Use an account that only reads books, as Glass Shelf needs, rather than an admin account. The password is kept as the HTTP Basic credential and KOReader's md5 key, both derived from it; treat them like the password.
 - The app talks only to your server. Nothing is sent anywhere else.
 - Downloaded books are cached on the phone (the last three). In the installed app the cache only lasts until the Even app restarts, so a book downloads again after that.
 

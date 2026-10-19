@@ -1,3 +1,4 @@
+import { fetchWithTimeout } from './fetch'
 import { parseFeed, type BookEntry, type Feed } from './parse'
 
 export type ServerConfig = {
@@ -23,9 +24,10 @@ export class OpdsClient {
   private async get(url: string): Promise<Response> {
     let res: Response
     try {
-      res = await fetch(url, { headers: { Authorization: `Basic ${this.server.basic}` } })
+      res = await fetchWithTimeout(url, { headers: { Authorization: `Basic ${this.server.basic}` } })
     } catch {
-      // fetch rejects without detail on DNS, TLS, VPN and CORS failures alike.
+      // fetch rejects without detail on DNS, TLS, VPN and CORS failures and
+      // timeouts alike.
       throw new OpdsError(`Could not reach ${new URL(this.server.url).host} (network or CORS).`, 'network')
     }
     if (res.status === 401 || res.status === 403) throw new OpdsError('Username or password rejected.', 'auth')

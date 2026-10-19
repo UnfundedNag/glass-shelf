@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- README: a private-network setup (VPN or home Wi-Fi) with a minimal plain-HTTP CORS proxy, verified on Android; proxy examples now strip Calibre-Web's reverse-proxy login header on the paths the app uses; privacy note that Even's app storage is shared beyond Glass Shelf.
+- Server requests give up after 15 s without an answer, so an unreachable server shows an error instead of hanging on "Testing connection…".
+
 ## 0.1.0 (2026-10-19)
 
 First release. Read a Calibre-Web library on G2 glasses with reading positions synced through Calibre-Web-Automated's KOReader sync server, verified with Readest in both directions.
