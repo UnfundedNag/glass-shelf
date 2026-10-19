@@ -171,7 +171,7 @@ To keep Glass Shelf on your glasses without a computer running, package it and i
    This builds the app and writes `build/app.json` with your package id, and with your `SERVER_ORIGIN` as the only allowed network origin.
 3. Sign in at [hub.evenrealities.com](https://hub.evenrealities.com/login), create a project, and upload `glass-shelf.ehpk` as a build. Leave it **private**.
 4. In the Even app, in the **Even Hub** tab (Developer Mode), go to **Me → Apps → Private builds** and tap **Install**. Glass Shelf then appears in the glasses menu.
-5. Open Glass Shelf. If its settings page on your phone is empty, enter your server details again.
+5. Open Glass Shelf. Your server settings carry over from developer mode.
 
 Your server address is part of the uploaded build, as its network permission; your username and password are not. To update, pack and upload a new build, then install it again. Even's guide: [Private Testing](https://hub.evenrealities.com/docs/test/private-testing).
 
@@ -209,12 +209,13 @@ The library lists **▶ Continue: \<your last book\>**, then the 19 most recentl
 - The glasses list the 20 most recent books; use search on the phone for the rest.
 - One server and one account at a time.
 - A book's table of contents and cover pages are skipped while reading.
+- In the installed app, books download again after the Even app restarts (see [Privacy](#privacy)).
 
 ## Privacy
 
 - Your server address, username and credentials are stored only in the Even app's storage for Glass Shelf on your phone. The password is kept as the HTTP Basic credential and KOReader's md5 key, both derived from it; treat them like the password.
 - The app talks only to your server. Nothing is sent anywhere else.
-- Downloaded books are cached on the phone (the last three).
+- Downloaded books are cached on the phone (the last three). In the installed app the cache only lasts until the Even app restarts, so a book downloads again after that.
 
 ## Development
 

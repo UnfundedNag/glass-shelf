@@ -1,8 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.1.0 (2026-10-19)
 
-- M4 (in progress): exact positions. Pushes and pulls KOReader XPointers down to the character (`/text()[K].N`), following CREngine's text-node numbering and whitespace counting, so Readest and KOReader land on the line the glasses were on.
+First release. Read a Calibre-Web library on G2 glasses with reading positions synced through Calibre-Web-Automated's KOReader sync server, verified with Readest in both directions.
+
+- Installable as a private Even Hub build (README). `PACKAGE_ID` sets your own package id; ids are unique across Even Hub.
+- Pages follow the G2 firmware's line-wrap rule, so they fill all nine lines without overflowing.
+- Phone app switches send no events to the app, so sync on leaving a book (double-tap) before changing devices.
+- Known: in the installed app the book cache lasts only until the Even app restarts, because the app's local origin (`http://127.0.0.1:<port>`) changes each time.
+
+- M4: exact positions. Pushes and pulls KOReader XPointers down to the character (`/text()[K].N`), following CREngine's text-node numbering and whitespace counting, so Readest and KOReader land on the line the glasses were on.
 
 - M3: KOReader sync, verified both ways with Readest on Android (glasses to Readest opened on the pushed paragraph; Readest to glasses prompted and landed exactly). KOReader partial-MD5 document hash, sync client (HTTP Basic with md5-key fallback), pull on open with a "Jump to 47% (Readest)?" prompt, paragraph-level XPointer pushes 10 s after page turns and on leaving or backgrounding, an offline retry queue, and a sync check and status line on the phone page.
 
